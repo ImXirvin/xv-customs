@@ -8,6 +8,17 @@
 }
 :root {
     font-size: 62.5%;
+    --yellow: #f1e542;
+    --black: #141517;
+    --grey: #444444;
+    --white: #ededed;
+    --green: #27ae60;
+    --blue: #2980b9;
+    --red: #c0392b;
+}
+
+.font-text {
+    font-family: 'Roboto', sans-serif;
 }
 
 html, body {

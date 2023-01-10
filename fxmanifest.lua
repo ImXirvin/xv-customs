@@ -10,15 +10,21 @@ lua54 'yes'
 
 ui_page 'html/index.html'
 
+shared_script {
+  "shared/**",
+  '@ox_lib/init.lua'
+}
+
+
 client_script {
-  'client/**',
+  'client/tables.lua',
+  'client/functions.lua',
+  'client/client.lua',
 }
 server_script {
   "server/**",
   }
-shared_script {
-  "shared/**",
-  }
+
 
 files {
   'html/**',

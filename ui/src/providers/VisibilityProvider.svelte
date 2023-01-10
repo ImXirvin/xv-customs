@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { visibility } from '../store/stores';
   import BackdropFix from './BackdropFix.svelte';
+  import { dataStore } from '@store/stores';
 
 
   let isVisible: boolean;

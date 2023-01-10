@@ -2,9 +2,13 @@
 	import VisibilityProvider from './providers/VisibilityProvider.svelte'
 	import { debugData } from './utils/debugData'
 	import { browserMode, visibility } from './store/stores'
-	import { ReceiveNUI } from './utils/ReceiveNUI'
+	import { ReceiveNUI } from '@utils/ReceiveNUI'
 	import DebugBrowser from './providers/DebugBrowser.svelte'
 	import AlwaysListener from './providers/AlwaysListener.svelte'
+	import Menu from '@components/Menu.svelte'
+	import { dataStore } from '@store/stores';
+	import { SendNUI } from '@utils/SendNUI'
+
 
 	debugData([
 		{
@@ -24,7 +28,7 @@
 
 	function browserHideAndShow(e) {
 		if (e.key === '=') {
-			$visibility = true
+			$visibility = !$visibility
 		}
 	}
 
@@ -37,13 +41,49 @@
 			window.removeEventListener('keydown', browserHideAndShow)
 		}
 	})
-</script>
 
-<VisibilityProvider>
-	<!-- PUT STUFF HERE  -->
-</VisibilityProvider>
+
+	$: currentMenuData = $dataStore
+	let menuStack = []
+	let currentIndex = 0
+	
+	function openSub(e) {
+		let data = e.detail
+		menuStack.push(currentMenuData)
+		currentMenuData = data
+		currentIndex = 0
+	}
+
+	function backMenu(e) {
+		if (menuStack.length === 0) {
+			console.log('hide ui')
+			SendNUI('hideUI')
+			return
+		}
+		let menu = menuStack.pop()
+		let findname = e.detail
+		currentMenuData = menu
+		currentIndex = menu.options.findIndex((option) => option.name === findname)
+	}
+</script>
 
 <AlwaysListener />
 {#if $browserMode}
 	<DebugBrowser />
 {/if}
+
+<VisibilityProvider>
+	{#if currentMenuData.options}
+	{#key currentMenuData.options}
+		<Menu 
+			data={currentMenuData}
+			showBackButton={menuStack.length > 0}
+			bind:currentIndex={currentIndex}
+			on:openSub={openSub}
+			on:backMenu={backMenu}
+		/>
+		{/key}
+	{/if}
+</VisibilityProvider>
+
+
