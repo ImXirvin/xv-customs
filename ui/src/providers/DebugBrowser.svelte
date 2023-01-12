@@ -491,13 +491,13 @@
 		],
 	}
 
-	// debugData(
-	// 	[
-	// 		{
-	// 			action: 'setData',
-	// 			data: dummyData,
-	// 		},
-	// 	],
-	// 	0
-	// )
+	debugData(
+		[
+			{
+				action: 'setData',
+				data: dummyData,
+			},
+		],
+		0
+	)
 </script>
