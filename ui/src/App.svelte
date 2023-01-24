@@ -8,6 +8,7 @@
 	import Menu from '@components/Menu.svelte'
 	import { dataStore } from '@store/stores';
 	import { SendNUI } from '@utils/SendNUI'
+	import { onDestroy } from 'svelte'
 
 
 	debugData([
@@ -56,7 +57,7 @@
 
 	function backMenu(e) {
 		if (menuStack.length === 0) {
-			console.log('hide ui')
+			currentIndex = 0
 			SendNUI('hideUI')
 			return
 		}
@@ -65,6 +66,8 @@
 		currentMenuData = menu
 		currentIndex = menu.options.findIndex((option) => option.name === findname)
 	}
+
+	
 </script>
 
 <AlwaysListener />

@@ -1,15 +1,18 @@
 local veh = nil
+local OriginalVehicle = {}
 
 --Main
 function EnterCustom(location)
     local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then return end
     veh = GetVehiclePedIsIn(ped, false)
     SetVehicleModKit(veh, 0)
     local data = {
         name = location,
         options = {}
     }
-    SaveVehicleData()
+
+    OriginalVehicle = SaveVehicleData()
     --Repair
     if Config.Spots[location].allowed.repair then
         local repairMenu = {
@@ -27,6 +30,7 @@ function EnterCustom(location)
             icon = Config.Options["perfomance"].icon,
             options = GetPerformance()
         }
+        print(json.encode(perfomanceMenu))
         data.options[#data.options + 1] = perfomanceMenu
     end
 
@@ -102,44 +106,48 @@ end
 
 --Vehicle
 
-local OriginalVehicle = nil
+-- local OriginalVehicle = nil
 --Save Vehicle
 function SaveVehicleData()
-    OriginalVehicle = {}
+    local DataVehicle = {}
     for i=0, #ModTypes do 
         local mod = ModTypes[i]
-        OriginalVehicle[mod.label] = GetVehicleMod(veh, mod.num)
+        DataVehicle[mod.label] = GetVehicleMod(veh, mod.num)
     end
 
     local paintTypePrimary, colourPrimary, pearlescentColour = GetVehicleModColor_1(veh)
-    OriginalVehicle["Primary"] = {
+    DataVehicle["Primary"] = {
         ["paintType"] = paintTypePrimary,
         ["colour"] = colourPrimary,
         ["pearlescent"] = pearlescentColour,
     }
     local paintTypeSecondary, colourSecondary = GetVehicleModColor_2(veh)
-    OriginalVehicle["Secondary"] = {
+    DataVehicle["Secondary"] = {
         ["paintType"] = paintTypeSecondary,
         ["colour"] = colourSecondary,
     }
 
-    OriginalVehicle["Neon"] = {
+    DataVehicle["Neon"] = {
         ["enabled"] = {IsVehicleNeonLightEnabled(veh, 0), IsVehicleNeonLightEnabled(veh, 1), IsVehicleNeonLightEnabled(veh, 2), IsVehicleNeonLightEnabled(veh, 3)},
         ["colour"] = table.pack(GetVehicleNeonLightsColour(veh)),
     }
 
-    OriginalVehicle["Tyre Smoke"] = {
+    DataVehicle["Tyre Smoke"] = {
         ["enabled"] = GetVehicleMod(veh, 20),
         ["colour"] = GetVehicleTyreSmokeColor(veh),
     }
 
-    OriginalVehicle["Xenon Lights"] = {
+    DataVehicle["Xenon Lights"] = {
         ["colour"] = GetVehicleXenonLightsColor(veh), --if 255 then disabled
     }
+
+    return DataVehicle
+
 end
 
 --Reset Vehicle
 function ResetVehicleData()
+    if OriginalVehicle == nil then return end
     local ignore = {
         ["Primary"] = true,
         ["Secondary"] = true,
@@ -149,6 +157,7 @@ function ResetVehicleData()
     }
     for i=0, #ModTypes do 
         if not ignore[ModTypes[i].label] then
+            --check if mod changed
             SetVehicleMod(veh, ModTypes[i].num, OriginalVehicle[ModTypes[i].label])
         end
     end
@@ -163,7 +172,9 @@ function ResetVehicleData()
     SetVehicleNeonLightsColour(veh, OriginalVehicle["Neon"]["colour"][1], OriginalVehicle["Neon"]["colour"][2], OriginalVehicle["Neon"]["colour"][3])
 
     SetVehicleMod(veh, 20, OriginalVehicle["Tyre Smoke"]["enabled"])
-    SetVehicleTyreSmokeColor(veh, OriginalVehicle["Tyre Smoke"]["colour"][1], OriginalVehicle["Tyre Smoke"]["colour"][2], OriginalVehicle["Tyre Smoke"]["colour"][3])
+    if OriginalVehicle["Tyre Smoke"]["enabled"] == 1 then
+        SetVehicleTyreSmokeColor(veh, OriginalVehicle["Tyre Smoke"]["colour"][1], OriginalVehicle["Tyre Smoke"]["colour"][2], OriginalVehicle["Tyre Smoke"]["colour"][3])
+    end
 
     SetVehicleXenonLightsColor(veh, OriginalVehicle["Xenon Lights"]["colour"])
 end
@@ -171,12 +182,12 @@ end
 
 
 
-
---Get Performance
-function GetPerformance()
+--Get ModTypes 
+function GetModTypes(arr, key)
+    print(Config.Prices[key], "key")
     local optionsTable = {}
-    for i=1, #PerformanceIndexes do
-        local modType = ModTypes[PerformanceIndexes[i]]
+    for i=1, #arr do
+        local modType = ModTypes[arr[i]]
         local modTypeSlot = modType.num
         local modTypeLabel = modType.label
         local modNumMods = GetNumVehicleMods(veh, modTypeSlot)
@@ -184,14 +195,23 @@ function GetPerformance()
             name = modTypeLabel,
             options = {}
         }
+        -- if Config.Prices[key] 
+        --check if Config.Prices[key] is a table
+        local stockPrice = 0
+        if type(Config.Prices[key]) == "table" then
+            stockPrice = Config.Prices[key][1]
+        else
+            stockPrice = Config.Prices[key]
+        end
         optionTable.options[#optionTable.options + 1] = {
             name = "Stock",
-            price = Config.Prices["performance"][1],
+            price = stockPrice,
             modIndex = -1,
             modSlot = modTypeSlot,
         }
         for modIndex=0, modNumMods - 1 do
             local modName = getlabel(veh, modTypeSlot, modIndex, modTypeLabel)
+            print(modName)
             local modData = {
                 name = modName,
                 price = 0,
@@ -205,17 +225,17 @@ function GetPerformance()
                     isPriceSet = true
                 end
             end
-            if Config.Prices["performance"] and not isPriceSet then
-                if Config.Prices["performance"][modIndex+1] then
-                    modData.price = Config.Prices["performance"][modIndex + 2]
+            if key == "performance" and not isPriceSet then
+                if Config.Prices[key][modIndex+1] then
+                    modData.price = Config.Prices[key][modIndex + 2]
                     isPriceSet = true
                 end
             end
-            if Config.Prices["performance"][1] and not isPriceSet then
-                modData.price = Config.Prices["performance"][1]
+            if Config.Prices[key] and not isPriceSet then
+                modData.price = Config.Prices[key]
                 isPriceSet = true
             end
-            -- print(#optionTable.options)
+
             optionTable.options[#optionTable.options + 1] = modData
         end
 
@@ -230,55 +250,17 @@ function GetPerformance()
     return optionsTable
 end
 
+
+
+--Get Performance
+function GetPerformance()
+    local optionsTable = GetModTypes(PerformanceIndexes, "performance")
+    return optionsTable
+end
+
 --Get Cosmetics
 function GetCosmetics()
-    local optionsTable = {}
-    for i=1, #CosmeticIndexes do
-        local modType = ModTypes[CosmeticIndexes[i]]
-        local modTypeSlot = modType.num
-        local modTypeLabel = modType.label
-        local modNumMods = GetNumVehicleMods(veh, modTypeSlot)
-        local optionTable = {
-            name = modTypeLabel,
-            options = {}
-        }
-        optionTable.options[#optionTable.options + 1] = {
-            name = "Stock",
-            price = Config.Prices["cosmetics"],
-            modIndex = -1,
-            modSlot = modTypeSlot,
-        }
-
-        for modIndex=0, modNumMods - 1 do
-            local modName = getlabel(veh, modTypeSlot, modIndex, modTypeLabel)
-            local modData = {
-                name = modName,
-                price = 0,
-                modIndex = modIndex,
-                modSlot = modTypeSlot,
-            }
-            local isPriceSet = false
-            if Config.Prices[modTypeLabel] then
-                if Config.Prices[modTypeLabel][modIndex] then
-                modData.price = Config.Prices[modTypeLabel][modIndex]
-                    isPriceSet = true
-                end
-            end
-            if Config.Prices["cosmetics"]and not isPriceSet then
-                modData.price = Config.Prices["cosmetics"]
-                isPriceSet = true
-            end
-            optionTable.options[#optionTable.options + 1] = modData
-        end
-        local currentMod = GetVehicleMod(veh, modTypeSlot)
-        for i=1, #optionTable.options do
-            if optionTable.options[i].modIndex == currentMod then
-                optionTable.options[i].selected = true
-            end
-        end
-        optionsTable[#optionsTable + 1] = optionTable
-    end
-
+    local optionsTable = GetModTypes(CosmeticIndexes, "cosmetics")
     optionsTable[#optionsTable + 1] = {
         name = "Neon",
         options = {
@@ -304,7 +286,6 @@ function GetCosmetics()
             },
         }
     }
-
     return optionsTable
 end
 
@@ -342,52 +323,10 @@ function GetColours()
         end
         optionsTable[i].options = optionTable
     end
-    -- print(json.encode(optionsTable, {indent = true}))
-    
-    --ADD Colour Indexes
-    for i=1, #ColourIndexes do
-        local modType = ModTypes[ColourIndexes[i]]
-        local modTypeSlot = modType.num
-        local modTypeLabel = modType.label
-        local modNumMods = GetNumVehicleMods(veh, modTypeSlot)
-        local optionTable = {
-            name = modTypeLabel,
-            options = {}
-        }
-        optionTable.options[#optionTable.options + 1] = {
-            name = "Stock",
-            price = Config.Prices["colours"],
-            modIndex = -1,
-            modSlot = modTypeSlot,
-        }
-        for modIndex=0, modNumMods  - 1 do
-            local modName = getlabel(veh, modTypeSlot, modIndex, modTypeLabel)
-            local modData = {
-                name = modName,
-                price = 0,
-                modIndex = modIndex,
-                modSlot = modTypeSlot,
-            }
-            local isPriceSet = false
-            if Config.Prices[modTypeLabel] then
-                if Config.Prices[modTypeLabel][modIndex] then
-                modData.price = Config.Prices[modTypeLabel][modIndex]
-                    isPriceSet = true
-                end
-            end
-            if Config.Prices["colours"]and not isPriceSet then
-                modData.price = Config.Prices["colours"]
-                isPriceSet = true
-            end
-            optionTable.options[#optionTable.options + 1] = modData
-        end
-        local currentMod = GetVehicleMod(veh, modTypeSlot)
-        for i=1, #optionTable.options do
-            if optionTable.options[i].modIndex == currentMod then
-                optionTable.options[i].selected = true
-            end
-        end
-        optionsTable[#optionsTable + 1] = optionTable
+
+    local indexOptions = GetModTypes(ColourIndexes, "colours")
+    for i=1, #indexOptions do
+        optionsTable[#optionsTable + 1] = indexOptions[i]
     end
     return optionsTable
 end
@@ -459,7 +398,51 @@ function PreviewChange(data)
     end
     
     if data.colour == true then
-        print("Colour")
+        local colour = data.num
+        print("Colour", colour)
+        local target = data.target
+        if colour then 
+            local primaryCol, secondaryCol = GetVehicleColours(veh)
+            if target == "Primary" then
+                SetVehicleColours(veh, colour, secondaryCol)
+                SetVehicleModColor_1(veh, ColourTypes[data.type], colour, 0)
+                print(GetVehicleColours(veh))
+            elseif target == "Secondary" then
+                SetVehicleColours(veh, primaryCol, colour)
+                SetVehicleModColor_2(veh, ColourTypes[data.type], colour, 0)
+            end
+        end
+    end
+end
+
+function ResetVehicle()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+
+    local primaryType, primaryCol, pearl  = table.unpack(OriginalVehicle["Primary"])
+    local secondaryType, secondaryCol = table.unpack(OriginalVehicle["Secondary"])
+    SetVehicleColours(veh, primaryCol, secondaryCol)
+    SetVehicleModColor_1(veh, primaryType, primaryCol, 0)
+    SetVehicleModColor_2(veh, secondaryType, secondaryCol, 0)
+end
+
+
+--ACTIONS
+
+Actions = {
+    ["repair"] = function(data)
+        --repair veh
+        SetVehicleFixed(veh)
+    end,
+
+    ["mod"] = function(data)
+        --mod veh
+        local modType = data.modSlot
+        local modIndex = data.modIndex
+        SetVehicleMod(veh, modType, modIndex)
+    end,
+
+    ["colour"] = function(data)
+        --colour veh
         local colour = data.num
         local target = data.target
         if colour then 
@@ -472,13 +455,10 @@ function PreviewChange(data)
                 SetVehicleModColor_2(veh, ColourTypes[data.type], colour, 0)
             end
         end
-    end
-end
+    end,
 
-function ResetColour()
-    local primaryType, primaryCol, pearl  = table.unpack(OriginalVehicle["Primary"])
-    local secondaryType, secondaryCol = table.unpack(OriginalVehicle["Secondary"])
-    SetVehicleColours(veh, primaryCol, secondaryCol)
-    SetVehicleModColor_1(veh, primaryType, primaryCol, 0)
-    SetVehicleModColor_2(veh, secondaryType, secondaryCol, 0)
-end
+    ["reset"] = function(data)
+        --reset veh
+        ResetVehicleData()
+    end,
+}

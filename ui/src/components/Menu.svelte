@@ -38,12 +38,8 @@
     onDestroy(() => {
 			document.removeEventListener('wheel', Listener)
 			document.removeEventListener('keydown', Listener)
-		if (!purchased && data.colour || !purchased && data.options[currentIndex].modIndex) {
-			let defaultData = originalItem
-			if (data.colour) {
-				SendNUI("ResetColour")
-			}
-			SendNUI("PreviewChange", defaultData)
+		if (!purchased) {
+			SendNUI("ResetVehicle")
 		}
     })
 
@@ -136,7 +132,7 @@
 				tempData.target = data.target
 				tempData.colour = true
 				SendNUI("PreviewChange", tempData)
-				console.log("colour change")
+				console.log("colour change", tempData)
 			}
 			// console.log(data.options)
 		}
