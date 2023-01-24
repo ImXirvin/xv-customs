@@ -1,30 +1,30 @@
 ModTypes = {
-    [0] = {name = "VMT_SPOILER", label = "Spoiler", num = 0},
-    [1] = {name = "VMT_BUMPER_F", label = "Front Bumper", num = 1},
-    [2] = {name = "VMT_BUMPER_R", label = "Rear Bumper", num = 2},
-    [3] = {name = "VMT_SKIRT", label = "Side Skirt", num = 3},
-    [4] = {name = "VMT_EXHAUST", label = "Exhaust", num = 4},
+    [0] = {name = "VMT_SPOILER", label = "Spoiler", num = 0, bone = "spoiler"},
+    [1] = {name = "VMT_BUMPER_F", label = "Front Bumper", num = 1, bone = "bumper_f"},
+    [2] = {name = "VMT_BUMPER_R", label = "Rear Bumper", num = 2, bone = "bumper_r"},
+    [3] = {name = "VMT_SKIRT", label = "Side Skirt", num = 3, bone = "skirt"},
+    [4] = {name = "VMT_EXHAUST", label = "Exhaust", num = 4, bone = "exhaust"},
     [5] = {name = "VMT_CHASSIS", label = "Frame", num = 5},
-    [6] = {name = "VMT_GRILL", label = "Grille", num = 6},
-    [7] = {name = "VMT_BONNET", label = "Hood", num = 7},
-    [8] = {name = "VMT_WING_L", label = "Fender L", num = 8},
-    [9] = {name = "VMT_WING_R", label = "Fender R", num = 9},
-    [10] = {name = "VMT_ROOF", label = "Roof", num = 10},
-    [11] = {name = "VMT_ENGINE", label = "Engine", num = 11},
+    [6] = {name = "VMT_GRILL", label = "Grille", num = 6, bone = "grille"},
+    [7] = {name = "VMT_BONNET", label = "Hood", num = 7, bone = "bonnet"},
+    [8] = {name = "VMT_WING_L", label = "Fender L", num = 8, bone = "wing_l"},
+    [9] = {name = "VMT_WING_R", label = "Fender R", num = 9, bone = "wing_r"},
+    [10] = {name = "VMT_ROOF", label = "Roof", num = 10, bone = "roof"},
+    [11] = {name = "VMT_ENGINE", label = "Engine", num = 11, bone = "engine"},
     [12] = {name = "VMT_BRAKES", label = "Brakes", num = 12},
     [13] = {name = "VMT_GEARBOX", label = "Gearbox", num = 13},
     [14] = {name = "VMT_HORN", label = "Horn", num = 14},
-    [15] = {name = "VMT_SUSPENSION", label = "Suspension", num = 15},
+    [15] = {name = "VMT_SUSPENSION", label = "Suspension", num = 15, bone = "suspension_lf"},
     [16] = {name = "VMT_ARMOUR", label = "Armour", num = 16},
     [17] = {name = "VMT_NITROUS", label = "Nitrous", num = 17},
     [18] = {name = "VMT_TURBO", label = "Turbo", num = 18},
     [19] = {name = "VMT_SUBWOOFER", label = "Subwoofer", num = 19},
-    [20] = {name = "VMT_TYRE_SMOKE", label = "Tyre Smoke", num = 20},
+    [20] = {name = "VMT_TYRE_SMOKE", label = "Tyre Smoke", num = 20, bone = "wheel_rr"},
     [21] = {name = "VMT_HYDRAULICS", label = "Hydraulics", num = 21},
-    [22] = {name = "VMT_XENON_LIGHTS", label = "Xenon Lights", num = 22},
-    [23] = {name = "VMT_WHEELS", label = "Wheels", num = 23},
-    [24] = {name = "VMT_WHEELS_REAR_OR_HYDRAULICS", label = "Wheels (Rear) or Hydraulics", num = 24},
-    [25] = {name = "VMT_PLTHOLDER", label = "Plate Holder", num = 25},
+    [22] = {name = "VMT_XENON_LIGHTS", label = "Xenon Lights", num = 22, bone = "headlight_l"},
+    [23] = {name = "VMT_WHEELS", label = "Wheels", num = 23, bone = "wheel_lf"},
+    [24] = {name = "VMT_WHEELS_REAR_OR_HYDRAULICS", label = "Wheels (Rear) or Hydraulics", num = 24, bone = "wheel_rr"},
+    [25] = {name = "VMT_PLTHOLDER", label = "Plate Holder", num = 25, bone = "numberplate"},
     [26] = {name = "VMT_PLTVANITY", label = "Plate Vanity", num = 26},
     [27] = {name = "VMT_INTERIOR1", label = "Interior 1", num = 27},
     [28] = {name = "VMT_INTERIOR2", label = "Interior 2", num = 28},
@@ -36,17 +36,17 @@ ModTypes = {
     [34] = {name = "VMT_KNOB", label = "Knob", num = 34},
     [35] = {name = "VMT_PLAQUE", label = "Plaque", num = 35},
     [36] = {name = "VMT_ICE", label = "Ice", num = 36},
-    [37] = {name = "VMT_TRUNK", label = "Trunk", num = 37},
+    [37] = {name = "VMT_TRUNK", label = "Trunk", num = 37, bone = "boot"},
     [38] = {name = "VMT_HYDRO", label = "Hydro", num = 38},
     [39] = {name = "VMT_ENGINEBAY1", label = "Engine Bay 1", num = 39},
     [40] = {name = "VMT_ENGINEBAY2", label = "Engine Bay 2", num = 40},
     [41] = {name = "VMT_ENGINEBAY3", label = "Engine Bay 3", num = 41},
-    [42] = {name = "VMT_CHASSIS2", label = "Frame 2", num = 42},
-    [43] = {name = "VMT_CHASSIS3", label = "Frame 3", num = 43},
-    [44] = {name = "VMT_CHASSIS4", label = "Frame 4", num = 44},
-    [45] = {name = "VMT_CHASSIS5", label = "Frame 5", num = 45},
-    [46] = {name = "VMT_DOOR_L", label = "Door (L)", num = 46},
-    [47] = {name = "VMT_DOOR_R", label = "Door (R)", num = 47},
+    [42] = {name = "VMT_CHASSIS2", label = "Frame 2", num = 42, bone = "chassis"},
+    [43] = {name = "VMT_CHASSIS3", label = "Frame 3", num = 43, bone = "chassis"},
+    [44] = {name = "VMT_CHASSIS4", label = "Frame 4", num = 44, bone = "chassis"},
+    [45] = {name = "VMT_CHASSIS5", label = "Frame 5", num = 45, bone = "chassis"},
+    [46] = {name = "VMT_DOOR_L", label = "Door (L)", num = 46, bone = "handle_dside_f"},
+    [47] = {name = "VMT_DOOR_R", label = "Door (R)", num = 47 , bone = "handle_pside_f"},
     [48] = {name = "VMT_LIVERY_MOD", label = "Livery Mod", num = 48},
     [49] = {name = "VMT_LIGHTBAR", label = "Lightbar", num = 49},
 }
@@ -66,9 +66,6 @@ WheelIndexes = {
 ColourIndexes = {
     27, 28, 29, 30, 48
 }
-
-
-
 
 local _defaultColours = {
     [0] = { label = "Black", num = 0 },
@@ -202,9 +199,10 @@ Colours = {
     },
 
     [5] = {
-        label = "Chrome",
+        label = "Misc",
         values = {
-            [0] = { label = "Chrome", num = 120 }
+            [0] = { label = "Chrome", num = 120 },
+            [1] = { label = "Chameleon", num = 161 }
         },
     }
 
