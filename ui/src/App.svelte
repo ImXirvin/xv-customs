@@ -8,7 +8,7 @@
 	import Menu from '@components/Menu.svelte'
 	import { dataStore } from '@store/stores';
 	import { SendNUI } from '@utils/SendNUI'
-	import { onDestroy } from 'svelte'
+	import CamDrag from '@components/CamDrag.svelte'
 
 
 	debugData([
@@ -78,13 +78,17 @@
 <VisibilityProvider>
 	{#if currentMenuData.options}
 	{#key currentMenuData.options}
+	<div class="flex flex-col w-full h-full">
+		<CamDrag />
 		<Menu 
-			data={currentMenuData}
-			showBackButton={menuStack.length > 0}
-			bind:currentIndex={currentIndex}
-			on:openSub={openSub}
-			on:backMenu={backMenu}
-		/>
+		data={currentMenuData}
+		showBackButton={menuStack.length > 0}
+		bind:currentIndex={currentIndex}
+		on:openSub={openSub}
+		on:backMenu={backMenu}
+	/>
+	</div>
+
 		{/key}
 	{/if}
 </VisibilityProvider>

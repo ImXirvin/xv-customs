@@ -7,7 +7,7 @@
 	import { SendNUI } from '@utils/SendNUI'
 
 	const dispatch = createEventDispatcher()
-
+	let menuElement = null 
 
 	export let data = {}
     export let showBackButton = false
@@ -18,12 +18,16 @@
     let choosingColour = false
     onMount(() => {
         // console.log(data)
-        document.addEventListener('wheel', Listener)
-        document.addEventListener('keydown', Listener)
+        // document.addEventListener('wheel', Listener)
+        // document.addEventListener('keydown', Listener)
+		//add event listener for mouse wheel and arrow keys for menuElement
+		menuElement.addEventListener('wheel', Listener)
+		document.addEventListener('keydown', Listener)
+
         // getParentMenuName("Cosmetics")
 
 		if (data.options) {
-			console.log("NAME", data.name)
+			// console.log("NAME", data.name)
 			data.options.forEach((item, i) => {
 				if (item.selected) {
 					currentIndex = i
@@ -38,7 +42,9 @@
     onDestroy(() => {
 			document.removeEventListener('wheel', Listener)
 			document.removeEventListener('keydown', Listener)
-		if (!purchased) {
+			let doesHaveColour = data.options.some((item) => item.colour)
+			let doesHaveMod = data.options.some((item) => item.modIndex)
+		if (!purchased && (doesHaveMod || doesHaveColour)) {
 			SendNUI("ResetVehicle")
 		}
     })
@@ -93,6 +99,9 @@
         if (option.modIndex) {
             console.log("action")
         }
+		if (option.customColour) {
+			choosingColour = true
+		}
 
 		// if (data.colour) {
 
@@ -129,10 +138,11 @@
 			if (data.colour) {
 				let tempData = data.options[currentIndex]
 				tempData.type = data.name
+				console.log(data.name)
 				tempData.target = data.target
 				tempData.colour = true
 				SendNUI("PreviewChange", tempData)
-				console.log("colour change", tempData)
+				// console.log("colour change", tempData)
 			}
 			// console.log(data.options)
 		}
@@ -142,6 +152,7 @@
 </script>
 
 <div
+	bind:this={menuElement}
 	in:fly={{ x: 50, duration: 150 }}
 	class="w-full absolute h-[35rem] bottom-0 flex flex-col p-5 gap-5"
 >   
@@ -235,7 +246,7 @@
 
 
 {#if choosingColour}
-    <Colour on:close={()=>choosingColour=false}/>
+    <Colour optionData={data.options[currentIndex]} colourMap={ColourMap} on:close={()=>choosingColour=false}/>
 {/if}
 
 

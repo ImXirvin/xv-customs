@@ -18,6 +18,7 @@ shared_script {
 
 client_script {
   'client/tables.lua',
+  'client/camHandler.lua',
   'client/functions.lua',
   'client/client.lua',
 }
