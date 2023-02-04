@@ -1,7 +1,7 @@
 local currentVehicleEntity = nil
 local OriginalVehicle = {}
 local currentCamBone = nil
-
+local NewVehicle = {} -- Includes cart data
 --Main
 function EnterCustom(location)
     local ped = PlayerPedId()
@@ -14,12 +14,13 @@ function EnterCustom(location)
     }
 
     OriginalVehicle = SaveVehicleData()
+    NewVehicle = copy(OriginalVehicle)
     --Repair
     if Config.Spots[location].allowed.repair then
         local repairMenu = {
             name = Config.Options["repair"].name,
             icon = Config.Options["repair"].icon,
-            action = "repair",
+            price = Config.Prices["repair"],
         }
         data.options[#data.options + 1] = repairMenu
     end
@@ -31,7 +32,6 @@ function EnterCustom(location)
             icon = Config.Options["perfomance"].icon,
             options = GetPerformance()
         }
-        print(json.encode(perfomanceMenu))
         data.options[#data.options + 1] = perfomanceMenu
     end
 
@@ -91,8 +91,12 @@ function closeMenu()
         data = showMenu
     })
     StopCamera()
+    ResetVehicleData(true)
+
     SetNuiFocus(showMenu, showMenu)
     OriginalVehicle = nil
+    NewVehicle = nil
+    currentVehicleEntity = nil
     currentCamBone = nil
 end
 
@@ -110,7 +114,7 @@ end
 
 --Vehicle
 
--- local OriginalVehicle = nil
+
 --Save Vehicle
 function SaveVehicleData()
     local DataVehicle = {}
@@ -119,17 +123,31 @@ function SaveVehicleData()
         DataVehicle[mod.label] = GetVehicleMod(currentVehicleEntity, mod.num)
     end
 
-    local paintTypePrimary, colourPrimary, pearlescentColour = GetVehicleModColor_1(currentVehicleEntity)
-    DataVehicle["Primary"] = {
-        ["paintType"] = paintTypePrimary,
-        ["colour"] = colourPrimary,
-        ["pearlescent"] = pearlescentColour,
-    }
-    local paintTypeSecondary, colourSecondary = GetVehicleModColor_2(currentVehicleEntity)
-    DataVehicle["Secondary"] = {
-        ["paintType"] = paintTypeSecondary,
-        ["colour"] = colourSecondary,
-    }
+
+    --check if colour is custom
+    DataVehicle["Primary"] = {}
+    if GetIsVehiclePrimaryColourCustom(currentVehicleEntity) then
+        DataVehicle["Primary"]["colour"] = table.pack(GetVehicleCustomPrimaryColour(currentVehicleEntity))
+        DataVehicle["Primary"]["custom"] = true
+    else 
+        local primaryColour, secondaryColour = GetVehicleColours(currentVehicleEntity)
+
+        DataVehicle["Primary"] = {
+            ["colour"] = primaryColour,
+        }
+    end
+
+    --check if colour is custom
+    DataVehicle["Secondary"] = {}
+    if GetIsVehicleSecondaryColourCustom(currentVehicleEntity) then
+        DataVehicle["Secondary"]["colour"] = table.pack(GetVehicleCustomSecondaryColour(currentVehicleEntity))
+        DataVehicle["Secondary"]["custom"] = true
+    else 
+        local primaryColour, secondaryColour = GetVehicleColours(currentVehicleEntity)
+        DataVehicle["Secondary"] = {
+            ["colour"] = secondaryColour,
+        }
+    end
 
     DataVehicle["Neon"] = {
         ["enabled"] = {IsVehicleNeonLightEnabled(currentVehicleEntity, 0), IsVehicleNeonLightEnabled(currentVehicleEntity, 1), IsVehicleNeonLightEnabled(currentVehicleEntity, 2), IsVehicleNeonLightEnabled(currentVehicleEntity, 3)},
@@ -144,14 +162,34 @@ function SaveVehicleData()
     DataVehicle["Xenon Lights"] = {
         ["colour"] = GetVehicleXenonLightsColor(currentVehicleEntity), --if 255 then disabled
     }
+    local pearlescentColour, wheelColour = GetVehicleExtraColours(currentVehicleEntity)
+    DataVehicle["Primary"]["pearlescent"] = pearlescentColour
+    DataVehicle["wheelColour"] = wheelColour
+    -- _, DataVehicle["wheelColour"] = GetVehicleExtraColours(currentVehicleEntity)
 
     return DataVehicle
 
 end
 
+--dont know of to do the reset without this, if I reset the vehicle to the original vehicle, since its a reference, it will reset the OriginalVehicle as well
+function copy(table)
+    local newTable = {}
+    for k, v in pairs(table) do
+        if type(v) == "table" then
+            newTable[k] = copy(v)
+        else
+            newTable[k] = v
+        end
+    end
+    return newTable
+
+end
+---@param full boolean // if true then reset to original vehicle, if false then reset to cart items
 --Reset Vehicle
-function ResetVehicleData()
+function ResetVehicleData(full)
     if OriginalVehicle == nil then return end
+    local sourceData = full and OriginalVehicle or NewVehicle
+    local vehData = copy(sourceData)
     currentCamBone = nil
     ResetCamera()
     local ignore = {
@@ -161,29 +199,63 @@ function ResetVehicleData()
         ["Tyre Smoke"] = true,
         ["Xenon Lights"] = true,
     }
-    for i=0, #ModTypes do 
-        if not ignore[ModTypes[i].label] then
-            --check if mod changed
-            SetVehicleMod(currentVehicleEntity, ModTypes[i].num, OriginalVehicle[ModTypes[i].label])
+
+    print("RESET VEHICLE DATA")
+    --check if colour is custom
+    if vehData["Primary"]["custom"] == true then
+        local r, g, b = GetVehicleCustomPrimaryColour(currentVehicleEntity)
+        if r ~= vehData["Primary"]["colour"][1] or g ~= vehData["Primary"]["colour"][2] or b ~= vehData["Primary"]["colour"][3] then
+            SetVehicleCustomPrimaryColour(currentVehicleEntity, vehData["Primary"]["colour"][1], vehData["Primary"]["colour"][2], vehData["Primary"]["colour"][3])
+        end
+    else 
+        local primary, secondary = GetVehicleColours(currentVehicleEntity)
+        local pearlescentColour, wheelColour = GetVehicleExtraColours(currentVehicleEntity)
+        if primary ~= vehData["Primary"]["colour"] then
+            SetVehicleColours(currentVehicleEntity, vehData["Primary"]["colour"], vehData["Secondary"]["colour"])
+            -- SetVehicleModColor_1(currentVehicleEntity, OriginalVehicle["Primary"]["paintType"], OriginalVehicle["Primary"]["colour"], OriginalVehicle["Primary"]["pearlescent"] or 0)
+        end
+        if pearlescentColour ~= vehData["Primary"]["pearlescent"] then
+            SetVehicleExtraColours(currentVehicleEntity, vehData["Primary"]["pearlescent"], vehData["wheelColour"])
         end
     end
 
-    SetVehicleModColor_1(currentVehicleEntity, OriginalVehicle["Primary"]["paintType"], OriginalVehicle["Primary"]["colour"], OriginalVehicle["Primary"]["pearlescent"] or 0)
-    SetVehicleModColor_2(currentVehicleEntity, OriginalVehicle["Secondary"]["paintType"], OriginalVehicle["Secondary"]["colour"])
-
-    SetVehicleNeonLightEnabled(currentVehicleEntity, 0, OriginalVehicle["Neon"]["enabled"][1])
-    SetVehicleNeonLightEnabled(currentVehicleEntity, 1, OriginalVehicle["Neon"]["enabled"][2])
-    SetVehicleNeonLightEnabled(currentVehicleEntity, 2, OriginalVehicle["Neon"]["enabled"][3])
-    SetVehicleNeonLightEnabled(currentVehicleEntity, 3, OriginalVehicle["Neon"]["enabled"][4])
-    SetVehicleNeonLightsColour(currentVehicleEntity, OriginalVehicle["Neon"]["colour"][1], OriginalVehicle["Neon"]["colour"][2], OriginalVehicle["Neon"]["colour"][3])
-
-    SetVehicleMod(currentVehicleEntity, 20, OriginalVehicle["Tyre Smoke"]["enabled"])
-    if OriginalVehicle["Tyre Smoke"]["enabled"] == 1 then
-        SetVehicleTyreSmokeColor(currentVehicleEntity, OriginalVehicle["Tyre Smoke"]["colour"][1], OriginalVehicle["Tyre Smoke"]["colour"][2], OriginalVehicle["Tyre Smoke"]["colour"][3])
+    --check if colour is custom
+    if vehData["Secondary"]["custom"] == true then
+        local r, g, b = GetVehicleCustomSecondaryColour(currentVehicleEntity)
+        if r ~= vehData["Secondary"]["colour"][1] or g ~= vehData["Secondary"]["colour"][2] or b ~= vehData["Secondary"]["colour"][3] then
+            SetVehicleCustomSecondaryColour(currentVehicleEntity, vehData["Secondary"]["colour"][1], vehData["Secondary"]["colour"][2], vehData["Secondary"]["colour"][3])
+        end
+    else 
+        local primary, secondary = GetVehicleColours(currentVehicleEntity)
+        if secondary ~= vehData["Secondary"]["colour"] then
+            SetVehicleColours(currentVehicleEntity, vehData["Primary"]["colour"], vehData["Secondary"]["colour"])
+            -- SetVehicleModColor_2(currentVehicleEntity, OriginalVehicle["Secondary"]["paintType"], OriginalVehicle["Secondary"]["colour"])
+        end
     end
 
-    SetVehicleXenonLightsColor(currentVehicleEntity, OriginalVehicle["Xenon Lights"]["colour"])
-    
+    for i=0, #ModTypes do 
+        if not ignore[ModTypes[i].label] then
+            --check if mod changed
+            local prevMod = GetVehicleMod(currentVehicleEntity, ModTypes[i].num)
+            if prevMod ~= OriginalVehicle[ModTypes[i].label] then
+                SetVehicleMod(currentVehicleEntity, ModTypes[i].num, vehData[ModTypes[i].label])
+            end 
+        end
+    end
+
+    SetVehicleNeonLightEnabled(currentVehicleEntity, 0, vehData["Neon"]["enabled"][1])
+    SetVehicleNeonLightEnabled(currentVehicleEntity, 1, vehData["Neon"]["enabled"][2])
+    SetVehicleNeonLightEnabled(currentVehicleEntity, 2, vehData["Neon"]["enabled"][3])
+    SetVehicleNeonLightEnabled(currentVehicleEntity, 3, vehData["Neon"]["enabled"][4])
+    SetVehicleNeonLightsColour(currentVehicleEntity, vehData["Neon"]["colour"][1], vehData["Neon"]["colour"][2], vehData["Neon"]["colour"][3])
+
+    SetVehicleMod(currentVehicleEntity, 20, OriginalVehicle["Tyre Smoke"]["enabled"])
+    if vehData["Tyre Smoke"]["enabled"] == 1 then
+        SetVehicleTyreSmokeColor(currentVehicleEntity, vehData["Tyre Smoke"]["colour"][1], vehData["Tyre Smoke"]["colour"][2], vehData["Tyre Smoke"]["colour"][3])
+    end
+
+    SetVehicleXenonLightsColor(currentVehicleEntity, vehData["Xenon Lights"]["colour"])
+    vehData = nil
 end
 
 
@@ -191,7 +263,6 @@ end
 
 --Get ModTypes 
 function GetModTypes(arr, key)
-    -- print(Config.Prices[key], "key")
     local optionsTable = {}
     for i=1, #arr do
         local modType = ModTypes[arr[i]]
@@ -202,6 +273,10 @@ function GetModTypes(arr, key)
             name = modTypeLabel,
             options = {}
         }
+        if modNumMods == 0 then 
+            -- optionsTable[#optionsTable + 1] = optionTable
+            goto continue
+        end
         -- if Config.Prices[key] 
         --check if Config.Prices[key] is a table
         local stockPrice = 0
@@ -210,22 +285,27 @@ function GetModTypes(arr, key)
         else
             stockPrice = Config.Prices[key]
         end
-        optionTable.options[#optionTable.options + 1] = {
-            name = "Stock",
-            price = stockPrice,
-            modIndex = -1,
-            modSlot = modTypeSlot,
-        }
+        -- optionTable.options[#optionTable.options + 1] = {
+        --     name = "Stock",
+        --     price = stockPrice,
+        --     modIndex = -1,
+        --     modSlot = modTypeSlot,
+        -- }
         for modIndex=0, modNumMods - 1 do
             local modName = getlabel(currentVehicleEntity, modTypeSlot, modIndex, modTypeLabel)
-            -- print(modName)
+            local isPriceSet = false
+            local price = 0
+            if modIndex == 0 then
+                modIndex = -1
+                price = stockPrice
+                isPriceSet = true
+            end
             local modData = {
                 name = modName,
-                price = 0,
+                price = price,
                 modIndex = modIndex,
                 modSlot = modTypeSlot,
             }
-            local isPriceSet = false
             if Config.Prices[modTypeLabel] then
                 if Config.Prices[modTypeLabel][modIndex] then
                 modData.price = Config.Prices[modTypeLabel][modIndex]
@@ -253,6 +333,8 @@ function GetModTypes(arr, key)
             end
         end
         optionsTable[#optionsTable + 1] = optionTable
+
+        ::continue::
     end
     return optionsTable
 end
@@ -307,10 +389,16 @@ function GetColours()
         name = "Secondary",
         options = {}
     }
+
+    local originalPrimary, originalSecondary = GetVehicleColours(currentVehicleEntity)
+    local pearlescent, wheelColour = GetVehicleExtraColours(currentVehicleEntity)
     for i=1, #optionsTable do
         local optionTable = {}
         for k, v in pairs(Colours) do
             local category = v.label
+            if category == "Pearlescent" and optionsTable[i].name == "Secondary" then
+                goto continue
+            end
             local categoryTable = {
                 name = category,
                 colour = true,
@@ -324,9 +412,19 @@ function GetColours()
                     num = colour.num,
                     price = Config.Prices["colours"],
                 }
+                if optionsTable[i].name == "Primary" then
+                    if originalPrimary == colour.num then
+                        colourTable.selected = true
+                    end
+                else
+                    if originalSecondary == colour.num then
+                        colourTable.selected = true
+                    end
+                end
                 categoryTable.options[#categoryTable.options + 1] = colourTable
             end
             optionTable[#optionTable + 1] = categoryTable
+            ::continue::
         end
         optionsTable[i].options = optionTable
     end
@@ -352,18 +450,21 @@ function GetWheels()
         local modTypeSlot = modType.num
         local modTypeLabel = modType.label
         local modNumMods = GetNumVehicleMods(currentVehicleEntity, modTypeSlot)
+
+        if modNumMods == 0 then
+            goto continue
+        end
+
         local optionTable = {
             name = modTypeLabel,
             options = {}
         }
-        optionTable.options[1] = {
-            name = "Stock",
-            price = Config.Prices["wheels"],
-            modIndex = -1,
-            modSlot = modTypeSlot,
-        }
         for modIndex=0, modNumMods - 1 do
             local modName = getlabel(currentVehicleEntity, modTypeSlot, modIndex, modTypeLabel)
+
+            if modIndex == 0 then
+                modIndex = -1
+            end
             local modData = {
                 name = modName,
                 price = 0,
@@ -390,6 +491,7 @@ function GetWheels()
             end
         end
         optionsTable[#optionsTable + 1] = optionTable
+        ::continue::
     end
     return optionsTable
 end
@@ -404,9 +506,7 @@ function PreviewChange(data)
     if data.modSlot ~= nil then
         local modType = data.modSlot
         local modIndex = data.modIndex
-        -- print(modType, modIndex)
         SetVehicleMod(currentVehicleEntity, modType, modIndex)
-        -- print(GetVehicleMod(currentVehicleEntity, modType))
         if ModTypes[modType].bone ~= nil then
             if currentCamBone == ModTypes[modType].bone then
                 goto continue
@@ -414,97 +514,123 @@ function PreviewChange(data)
             currentCamBone = ModTypes[modType].bone
             local veh = currentVehicleEntity
             local boneCoords = GetWorldPositionOfEntityBone(veh, GetEntityBoneIndexByName(veh, ModTypes[modType].bone))
-            -- print(boneCoords)
             if boneCoords.x == 0 and boneCoords.y == 0 and boneCoords.z == 0 then 
                 goto continue
             end
-            --find a heading that will make the camera look at the bone
-            -- local heading = GetEntityHeading(veh) + 180
-            
-            -- print(heading)
             MoveCamera(boneCoords, heading)
             ::continue::
         end 
     end
-    
-    if data.colour == true then
-        local target = data.target
-        if target then 
-            local primaryCol, secondaryCol = GetVehicleColours(currentVehicleEntity)
-            if data.customColour == true then
-                local colour = data.colourValue
-                if target == "Primary" then
-                    SetVehicleCustomPrimaryColour(currentVehicleEntity, colour.r, colour.g, colour.b)
-                    SetVehicleModColor_1(currentVehicleEntity, ColourTypes[data.type])
-                    print(ColourTypes[data.type])
-                elseif target == "Secondary" then
-                    SetVehicleCustomSecondaryColour(currentVehicleEntity, colour.r, colour.g, colour.b)
-                    SetVehicleModColor_2(currentVehicleEntity, ColourTypes[data.type])
-                end
-                return
-            end
-            if GetVehicleCustomPrimaryColour(currentVehicleEntity) then
-                ClearVehicleCustomPrimaryColour(currentVehicleEntity)
-            end
-            if GetVehicleCustomSecondaryColour(currentVehicleEntity) then
-                ClearVehicleCustomSecondaryColour(currentVehicleEntity)
-            end
-            local colour = data.num
+end
+
+
+
+function PreviewColour(data)
+    print(json.encode(data))
+    local target = data.target
+    if target == nil then return end
+    local primaryCol, secondaryCol = GetVehicleColours(currentVehicleEntity)
+    if data.customColour == true then
+        local colour = data.colourValue
+        if target == "Primary" then
+            SetVehicleCustomPrimaryColour(currentVehicleEntity, colour.r, colour.g, colour.b)
+            SetVehicleModColor_1(currentVehicleEntity, ColourTypes[data.type])
+        elseif target == "Secondary" then
+            SetVehicleCustomSecondaryColour(currentVehicleEntity, colour.r, colour.g, colour.b)
+            SetVehicleModColor_2(currentVehicleEntity, ColourTypes[data.type])
+        end
+        return
+    end
+    if GetVehicleCustomPrimaryColour(currentVehicleEntity) then
+        ClearVehicleCustomPrimaryColour(currentVehicleEntity)
+    end
+    if GetVehicleCustomSecondaryColour(currentVehicleEntity) then
+        ClearVehicleCustomSecondaryColour(currentVehicleEntity)
+    end
+    local colour = data.num
+    if target == "Primary" then
+        if data.type == "Pearlescent" then
+            print("pearlescent")
+            SetVehicleExtraColours(currentVehicleEntity, colour, NewVehicle["wheelColour"])
+        else
+            SetVehicleColours(currentVehicleEntity, colour, secondaryCol)
+        end
+    elseif target == "Secondary" then
+        SetVehicleColours(currentVehicleEntity, primaryCol, colour)
+    end
+end
+
+RegisterNetEvent('xv-customs:client:repairVehicle', function()
+    SetVehicleFixed(currentVehicleEntity)
+end)
+
+
+function UpdateCart(data)
+    local isNil = next(NewVehicle)
+    if isNil == nil then return end
+    local newVeh = NewVehicle
+    local cartItems = {}
+    for i=1, #data do
+        local item = data[i]
+        if item.colour == true then
+            local target = item.target
             if target == "Primary" then
-                SetVehicleColours(currentVehicleEntity, colour, secondaryCol)
-                SetVehicleModColor_1(currentVehicleEntity, ColourTypes[data.type], colour, 0)
+                cartItems["Primary"] = {}
+                if item.customColour == true then
+                    local colour = item.colourValue
+                    cartItems["Primary"]["custom"] = true
+                    cartItems["Primary"]["colour"]= {r = colour.r, g = colour.g, b = colour.b}
+                else
+                    -- if item.pearlescent == true then
+                    --     cartItems["Primary"]["pearlescent"] = item.num
+                    -- else
+                        -- cartItems["Primary"]["colour"] = item.num
+                    -- end
+                    if item.type == "Pearlescent" then
+                        cartItems["Primary"]["pearlescent"] = item.num
+                        print("pearlescent")
+                    else
+                        cartItems["Primary"]["colour"] = item.num
+                    end
+                end
             elseif target == "Secondary" then
-                SetVehicleColours(currentVehicleEntity, primaryCol, colour)
-                SetVehicleModColor_2(currentVehicleEntity, ColourTypes[data.type], colour, 0)
+                cartItems["Secondary"] = {}
+                if item.customColour == true then
+                    local colour = item.colourValue
+                    cartItems["Secondary"]["custom"] = true
+                    cartItems["Secondary"]["colour"]= {r = colour.r, g = colour.g, b = colour.b}
+                else
+                    cartItems["Secondary"]["colour"] = item.num
+                end
             end
+        else
+            cartItems[item.parent] = item.modIndex
+        end
+    end
+
+    for modName, val in pairs(newVeh) do
+        if cartItems[modName] ~= nil then
+            newVeh[modName] = cartItems[modName]
+        else 
+            newVeh[modName] = OriginalVehicle[modName]
+        end
+    end
+
+    NewVehicle = newVeh
+    ResetVehicleData(false)
+end
+
+function PurchaseCart(data)
+    UpdateCart(data)
+    local totalPrice = 0
+    for _, item in pairs(data) do
+        if item.price ~= nil then
+            totalPrice = totalPrice + item.price
         end
     end
 end
 
-function ResetVehicle()
-    local currentVehicleEntity = GetVehiclePedIsIn(PlayerPedId(), false)
-    local primaryType, primaryCol, pearl  = table.unpack(OriginalVehicle["Primary"])
-    local secondaryType, secondaryCol = table.unpack(OriginalVehicle["Secondary"])
-    SetVehicleColours(currentVehicleEntity, primaryCol, secondaryCol)
-    SetVehicleModColor_1(currentVehicleEntity, primaryType, primaryCol, 0)
-    SetVehicleModColor_2(currentVehicleEntity, secondaryType, secondaryCol, 0)
-    currentCamBone = nil
-end
+RegisterNetEvent("xv-customs:client:buyCart", function(data)
 
 
---ACTIONS
-
-Actions = {
-    ["repair"] = function(data)
-        --repair currentVehicleEntity
-        SetVehicleFixed(currentVehicleEntity)
-    end,
-
-    ["mod"] = function(data)
-        --mod currentVehicleEntity
-        local modType = data.modSlot
-        local modIndex = data.modIndex
-        SetVehicleMod(currentVehicleEntity, modType, modIndex)
-    end,
-
-    ["colour"] = function(data)
-        --colour currentVehicleEntity
-        local colour = data.customColour and data.colourValue or data.num
-        local target = data.target
-        if colour then 
-            local primaryCol, secondaryCol = GetVehicleColours(currentVehicleEntity)
-            if target == "Primary" then
-                SetVehicleColours(currentVehicleEntity, colour, secondaryCol)
-                SetVehicleModColor_1(currentVehicleEntity, ColourTypes[data.type], colour, 0)
-            elseif target == "Secondary" then
-                SetVehicleColours(currentVehicleEntity, primaryCol, colour)
-                SetVehicleModColor_2(currentVehicleEntity, ColourTypes[data.type], colour, 0)
-            end
-        end
-    end,
-
-    ["reset"] = function(data)
-        --reset currentVehicleEntity
-        ResetVehicleData()
-    end,
-}
+end)

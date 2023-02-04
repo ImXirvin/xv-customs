@@ -53,6 +53,10 @@ RegisterNUICallback("zoom", function(data, cb)
         cb(0)
         return
     end
+    if camDistance + data > 7.0 then
+        cb(0)
+        return
+    end
     camDistance = camDistance + data
     -- print(camDistance)
     SetCamPosition()
@@ -148,6 +152,7 @@ function MoveCamera(coords, heading)
 end
 
 function ResetCamera()
+    if originalCoords == nil then return end
     print("resetting camera camHandler")
     changingCam = true
     camDistance = 5.0

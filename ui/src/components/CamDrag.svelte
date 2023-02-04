@@ -23,7 +23,7 @@
 
 
 
-<div class={`w-full h-full ${isMouseDown?"cursor-grabbing":"cursor-grab"}`}
+<div class={`w-full h-full cursor-grab active:cursor-grabbing`}
     on:mousedown={() => isMouseDown = true}
     on:mouseup={() => isMouseDown = false}
     on:wheel={scrollHandler}

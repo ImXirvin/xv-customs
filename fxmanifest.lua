@@ -9,11 +9,7 @@ lua54 'yes'
 
 
 ui_page 'html/index.html'
-
-shared_script {
-  "shared/**",
-  '@ox_lib/init.lua'
-}
+-- ui_page "http://localhost:3000/"
 
 
 client_script {

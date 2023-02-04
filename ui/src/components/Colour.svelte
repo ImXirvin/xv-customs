@@ -3,6 +3,7 @@
     import { fly } from 'svelte/transition'
 	import { createEventDispatcher } from 'svelte'
 	import { SendNUI } from '@utils/SendNUI'
+    import { cart } from '@store/stores'
 
 	const dispatch = createEventDispatcher()
     export let colourMap = {}
@@ -65,8 +66,8 @@
             tempData.customColour = true
             tempData.type = paintType
             tempData.colourValue = {r,g,b}
-            SendNUI("PreviewChange", tempData)
-            console.log("PREVIEW CUSTOM PAINT")
+            SendNUI("PreviewColor", tempData)
+            // console.log("PREVIEW CUSTOM PAINT")
     }
 
 
@@ -83,7 +84,7 @@
  >
 
     <div class="w-full h-[5rem] bg-[color:var(--white)] grid place-items-center" style="background-color: {colour}">
-        <p style="color: {hex}" class=" font-text font-bold">Colour</p>
+        <p style="color: {hex}" class=" font-text font-bold text-[2rem]">Colour</p>
     </div>
 
     <ColorSelect bind:r={r} bind:g={g} bind:b={b} />
@@ -130,7 +131,7 @@
         </div>
         <!-- Cancel and Accept Buttons -->
         <div class="flex flex-row gap-2 w-full">
-            <button class="w-full  bg-[color:var(--red)] text-[color:var(--white)] font-text font-bold hover:brightness-90 active:brightness-110"
+            <button class="w-full  bg-[color:var(--red)] text-[color:var(--white)] font-text font-bold active:brightness-90 hover:brightness-110"
             on:click={() => {
                 dispatch('close')
                 SendNUI("ResetVehicle")
@@ -138,7 +139,20 @@
             >
             Cancel
             </button>
-            <button class="w-full bg-[color:var(--green)] text-[color:var(--white)] font-text font-bold hover:brightness-90 active:brightness-110"
+            <button class="w-full bg-[color:var(--green)] text-[color:var(--white)] font-text font-bold active:brightness-90 hover:brightness-110"
+                on:click={() => {
+                    let tempData = optionData || {}
+                    tempData.type = "colour"
+                    tempData.target = target
+                    tempData.colour = true
+                    tempData.customColour = true
+                    tempData.type = paintType
+                    tempData.colourValue = {r,g,b}
+                    // console.log(tempData)
+                    $cart = [...$cart, tempData]
+                    dispatch("purchased")
+                    dispatch('close')
+                }}
             >
             Apply
             </button>

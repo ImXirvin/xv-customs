@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { visibility } from '../store/stores';
   import BackdropFix from './BackdropFix.svelte';
-  import { dataStore } from '@store/stores';
+  import { dataStore, cart, isCart } from '@store/stores';
 
 
   let isVisible: boolean;
@@ -15,6 +15,10 @@
 
   ReceiveNUI<boolean>('setVisible', (visible) => {
     visibility.set(visible);
+    if (!visible) {
+      $cart = [];
+      $isCart = false;
+    }
   });
 
 
